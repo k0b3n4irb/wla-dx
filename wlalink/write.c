@@ -2695,14 +2695,19 @@ int write_symbol_file(char *outname, int mode, int output_addr_to_line) {
           list_cmd = s->listfile_cmds[list_cmd_idx];
           if (list_cmd == 'k') {
             /* new line */
-            if (s->listfile_ints[list_cmd_idx * 3 + 1] > 0) {
-              fprintf(f, "%.8x %.2x:%.4x %.4x %.4x:%.4x:%.8lx\n", s->output_address + list_address_offset, s->bank + s->base, s->address + list_address_offset, g_slots[s->slot].address + s->address + list_address_offset, s->file_id + 1, list_source_file, (long unsigned int)s->listfile_ints[list_cmd_idx * 3 + 0]);
-              list_address_offset += s->listfile_ints[list_cmd_idx * 3 + 1];
+            if (s->listfile_ints[list_cmd_idx * 5 + 1] > 0) {
+              list_address_offset += s->listfile_ints[list_cmd_idx * 5 + 2];
+              fprintf(f, "%.8x %.2x:%.4x %.4x %.4x:%.4x:%.8lx\n", s->output_address + list_address_offset, s->bank + s->base, s->address + list_address_offset, g_slots[s->slot].address + s->address + list_address_offset, s->file_id + 1, list_source_file, (long unsigned int)s->listfile_ints[list_cmd_idx * 5 + 0]);
+              list_address_offset += s->listfile_ints[list_cmd_idx * 5 + 1];
+            }
+            else {
+              /* skipped line - it still carries an address offset */
+              list_address_offset += s->listfile_ints[list_cmd_idx * 5 + 2];
             }
           }
           else if (list_cmd == 'f') {
             /* another file */
-            list_source_file = s->listfile_ints[list_cmd_idx * 3 + 0];
+            list_source_file = s->listfile_ints[list_cmd_idx * 5 + 0];
           }
         }
         s = s->next;
