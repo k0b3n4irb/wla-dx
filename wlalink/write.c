@@ -5713,6 +5713,18 @@ int get_snes_pc_bank(struct label *l) {
 
   int x, k;
 
+  /* OpenSNES: .BASE describes the CPU-visible ROM window ($80 for the
+     FastROM mirror, $C0 for HiROM's full 64 KB view). A RAMSECTION label
+     lives in WRAM ($7E/$7F, or the bank-0 mirror), whose bank byte is
+     fixed by the hardware — adding the base produced $FE for a $7E
+     buffer under .BASE $80 and $13E (out of 24-bit range) under
+     .BASE $C0. RAM labels keep their bank as declared. */
+  if (l->section_status == ON && l->section_struct != NULL && (l->section_struct->status == SECTION_STATUS_RAM_FREE ||
+                                                               l->section_struct->status == SECTION_STATUS_RAM_SEMIFREE ||
+                                                               l->section_struct->status == SECTION_STATUS_RAM_SEMISUBFREE ||
+                                                               l->section_struct->status == SECTION_STATUS_RAM_FORCE))
+    return l->bank << 16;
+
   /* TODO: clean up this mess */
 
   /* do we override the user's banking scheme (.HIROM/.LOROM/.EXHIROM/.EXLOROM)? */
