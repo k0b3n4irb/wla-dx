@@ -23,7 +23,7 @@ extern char g_version_string[];
 
 
 /* read an integer from t */
-#define READ_T t[3] + (t[2] << 8) + (t[1] << 16) + (t[0] << 24); t += 4;
+#define READ_T t[3] + (t[2] << 8) + (t[1] << 16) + ((unsigned int)t[0] << 24); t += 4;
 
 
 static int _strings_equal(const char *a, const char *b) {

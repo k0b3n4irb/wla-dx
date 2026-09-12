@@ -1965,7 +1965,7 @@ int evaluate_token(void) {
 
     /* check for \@-symbols */
     if (g_macro_active != 0) {
-      if (g_tmp[g_ss - 3] == '\\' && g_tmp[g_ss - 2] == '@')
+      if (g_ss >= 3 && g_tmp[g_ss - 3] == '\\' && g_tmp[g_ss - 2] == '@')
         snprintf(&g_tmp[g_ss - 3], g_sizeof_g_tmp - (g_ss - 3), "%d", g_macro_runtime_current->macro->calls - 1);
     }
 

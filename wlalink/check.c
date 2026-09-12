@@ -12,8 +12,8 @@
 
 
 /* read an integer from t */
-#define READ_T (t[3] + (t[2] << 8) + (t[1] << 16) + (t[0] << 24)); t += 4;
-#define READ_T_FINAL (t[3] + (t[2] << 8) + (t[1] << 16) + (t[0] << 24));
+#define READ_T (t[3] + (t[2] << 8) + (t[1] << 16) + ((unsigned int)t[0] << 24)); t += 4;
+#define READ_T_FINAL (t[3] + (t[2] << 8) + (t[1] << 16) + ((unsigned int)t[0] << 24));
 
 extern struct object_file *g_obj_first;
 extern int g_emptyfill, g_sms_checksum, g_smstag_defined, g_snes_rom_mode, g_snes_rom_speed, g_smc_status, g_sms_header;

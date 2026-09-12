@@ -19,7 +19,7 @@
 
 
 /* read an integer from t */
-#define READ_T (t[3] + (t[2] << 8) + (t[1] << 16) + (t[0] << 24)); t += 4;
+#define READ_T (t[3] + (t[2] << 8) + (t[1] << 16) + ((unsigned int)t[0] << 24)); t += 4;
 
 /* read a double from t */
 #define READ_DOU {                              \
@@ -2328,7 +2328,7 @@ int obtain_rombanks(void) {
     if (g_obj_tmp->format == WLA_VERSION_OBJ) {
 
       t = g_obj_tmp->data + OBJ_ROMBANKS;
-      k = t[3] + (t[2] << 8) + (t[1] << 16) + (t[0] << 24);
+      k = t[3] + (t[2] << 8) + (t[1] << 16) + ((unsigned int)t[0] << 24);
 
       g_obj_tmp->rom_banks = k;
 
