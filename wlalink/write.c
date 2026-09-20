@@ -5683,6 +5683,21 @@ int parse_stack(struct stack *sta) {
       si->base = l->base;
       si->bank = l->bank;
 
+      /* OpenSNES: the BANK operators of the calculation engine (":label",
+         SI_OP_BANK / SI_OP_BANK_BYTE) add the item's base to the bank they
+         compute. For a RAMSECTION label on the 65816 that is wrong for the
+         same reason get_snes_pc_bank() returns such a label's bank untouched:
+         .BASE describes the CPU-visible ROM window, and a WRAM label's bank
+         byte is fixed by the hardware. Under .BASE $C0 (HiROM) `pea.w :var`
+         pushed $C0 for a bank-$00 RAM variable, so every C pointer to RAM
+         carried a ROM bank. */
+      if (get_file(sta->file_id)->cpu_65816 == YES && l->section_status == ON && l->section_struct != NULL &&
+          (l->section_struct->status == SECTION_STATUS_RAM_FREE ||
+           l->section_struct->status == SECTION_STATUS_RAM_SEMIFREE ||
+           l->section_struct->status == SECTION_STATUS_RAM_SEMISUBFREE ||
+           l->section_struct->status == SECTION_STATUS_RAM_FORCE))
+        si->base = 0;
+
       /*
         fprintf(stdout, "%s: %s:%d: %s %x %d\n", get_file_name(sta->file_id), get_source_file_name(sta->file_id, sta->file_id_source), sta->linenumber,
         si->string, (int)k, sta->relative_references);
