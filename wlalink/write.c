@@ -3527,7 +3527,11 @@ int write_symbol_file(char *outname, int mode, int output_addr_to_line) {
             got_ramsections = YES;
           }
           
-          fprintf(f, "%.2x:%.4x %.4x %.8x %s\n", s->bank + s->base, s->address, g_slots[s->slot].address + s->address, s->size, s->name);
+          /* OpenSNES: no .BASE here either — a RAMSECTION's bank is the
+             WRAM bank it was declared in, as get_snes_pc_bank() prints its
+             labels. With the base, HiROM's .BASE $C0 listed a $7E section
+             as "13e:" and bank-0 RAM as "c0:". */
+          fprintf(f, "%.2x:%.4x %.4x %.8x %s\n", s->bank, s->address, g_slots[s->slot].address + s->address, s->size, s->name);
         }
       }
       s = s->next;
