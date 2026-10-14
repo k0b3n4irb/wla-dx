@@ -1089,6 +1089,31 @@ static int _mark_ram_section_area(struct section *s, int address, int max_addres
 }
 
 
+/* OpenSNES: the "no room" refusal names what the section holds and, when it
+   is bigger than a ROM bank, says so. A C const object is compiled to a
+   section named ".rodata.N": its first label is the C name, which is what the
+   reader needs, and a section cannot span banks, which is why it failed. */
+static void _print_no_room(struct section *s, int bank) {
+
+  struct label *l;
+  char object[MAX_NAME_LENGTH + 32] = "", why[160] = "", where[32] = "";
+
+  for (l = g_labels_first; l != NULL; l = l->next) {
+    if (l->section_status == ON && l->section == s->id && l->address_in_section == 0) {
+      snprintf(object, sizeof(object), " (object \"%s\")", l->name);
+      break;
+    }
+  }
+  if (bank >= 0) {
+    snprintf(where, sizeof(where), " in ROM bank %d", bank);
+    if (bank < g_rombanks && s->size > g_banksizes[bank])
+      snprintf(why, sizeof(why), ": it is larger than a ROM bank (%d bytes), and a section cannot span banks; split it", g_banksizes[bank]);
+  }
+  print_text(NO, "%s: %s: INSERT_SECTIONS: No room for section \"%s\"%s (%d bytes)%s%s.\n", get_file_name(s->file_id),
+             get_source_file_name(s->file_id, s->file_id_source), s->name, object, s->size, where, why);
+}
+
+
 static int _insert_rom_after_section(struct section *s) {
 
   int address, end_address;
@@ -1137,8 +1162,7 @@ static int _insert_rom_after_section(struct section *s) {
     }
   }
   else {
-    print_text(NO, "%s: %s: INSERT_SECTIONS: No room for section \"%s\" (%d bytes) in ROM bank %d.\n", get_file_name(s->file_id),
-            get_source_file_name(s->file_id, s->file_id_source), s->name, s->size, s->bank);
+    _print_no_room(s, s->bank);
     return FAILED;
   }
 
@@ -1447,8 +1471,7 @@ static int _write_section_force(struct section *s) {
     }
   }
   else {
-    print_text(NO, "%s: %s: INSERT_SECTIONS: No room for section \"%s\" (%d bytes) in ROM bank %d.\n", get_file_name(s->file_id),
-            get_source_file_name(s->file_id, s->file_id_source), s->name, s->size, s->bank);
+    _print_no_room(s, s->bank);
     return FAILED;
   }
 
@@ -1498,8 +1521,7 @@ static int _write_section_semisuperfree(struct section *s) {
 
       bank++;
       if (bank == banks_max) {
-        print_text(NO, "%s: %s: INSERT_SECTIONS: No room for section \"%s\" (%d bytes).\n", get_file_name(s->file_id),
-                get_source_file_name(s->file_id, s->file_id_source), s->name, s->size);
+        _print_no_room(s, banks[0]);
         return FAILED;
       }
     }
@@ -1556,8 +1578,7 @@ static int _write_section_semisubfree(struct section *s) {
           g_pc_bank = f + 1;
       }
       if (g_pc_bank + s->offset >= s->address) {
-        print_text(NO, "%s: %s: INSERT_SECTIONS: No room for section \"%s\" (%d bytes) in ROM bank %d.\n", get_file_name(s->file_id),
-                get_source_file_name(s->file_id, s->file_id_source), s->name, s->size, s->bank);
+        _print_no_room(s, s->bank);
         return FAILED;
       }
 
@@ -1641,8 +1662,7 @@ static int _write_section_free_and_semifree(struct section *s) {
           g_pc_bank = f + 1;
       }
       if (g_pc_bank + s->offset >= g_banksizes[s->bank]) {
-        print_text(NO, "%s: %s: INSERT_SECTIONS: No room for section \"%s\" (%d bytes) in ROM bank %d.\n", get_file_name(s->file_id),
-                get_source_file_name(s->file_id, s->file_id_source), s->name, s->size, s->bank);
+        _print_no_room(s, s->bank);
         return FAILED;
       }
 
@@ -1769,8 +1789,7 @@ static int _write_section_superfree(struct section *s) {
           return FAILED;
     }
     else {
-      print_text(NO, "%s: %s: INSERT_SECTIONS: No room for section \"%s\" (%d bytes) in ROM bank %d.\n", get_file_name(s->file_id),
-              get_source_file_name(s->file_id, s->file_id_source), s->name, s->size, s->bank);
+      _print_no_room(s, s->bank);
       return FAILED;
     }
   }
