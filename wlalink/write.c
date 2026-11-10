@@ -813,17 +813,32 @@ static int _write_c64_crt_file(FILE *f, char *outname) {
 }
 
 
+/* A section with the position it had in the list before the sort. The comparator must be a
+   valid order: it used to return -1 for two sections of the same priority and size in BOTH
+   directions, and qsort() then ordered them as its implementation pleased (glibc keeps the
+   original order, macOS and MinGW do not), so the same sources linked to different ROM bytes
+   on different systems. Ties now keep the original order on every system. */
+struct section_pos {
+  struct section *s;
+  int pos;
+};
+
 static int _sections_sort(const void *a, const void *b) {
 
-  if ((*((struct section **)a))->priority < (*((struct section **)b))->priority)
+  const struct section_pos *x = (const struct section_pos *)a;
+  const struct section_pos *y = (const struct section_pos *)b;
+
+  if (x->s->priority < y->s->priority)
     return 1;
-  else if ((*((struct section **)a))->priority > (*((struct section **)b))->priority)
+  else if (x->s->priority > y->s->priority)
     return -1;
 
-  if ((*((struct section **)a))->size < (*((struct section **)b))->size)
+  if (x->s->size < y->s->size)
     return 1;
+  else if (x->s->size > y->s->size)
+    return -1;
 
-  return -1;
+  return (x->pos > y->pos) - (x->pos < y->pos);
 }
 
 
@@ -983,6 +998,7 @@ struct section *find_section(int id) {
 int sort_sections(void) {
 
   struct section *s, **sa;
+  struct section_pos *sp;
   int i, sn;
   
   /* sort the sections by priority first and then by size, biggest first */
@@ -1000,8 +1016,11 @@ int sort_sections(void) {
   if (sn == 0)
     return SUCCEEDED;
 
+  sp = calloc(sizeof(struct section_pos) * sn, 1);
   sa = calloc(sizeof(struct section *) * sn, 1);
-  if (sa == NULL) {
+  if (sa == NULL || sp == NULL) {
+    free(sa);
+    free(sp);
     print_text(NO, "SORT_SECTIONS: Out of memory error.\n");
     return FAILED;
   }
@@ -1010,12 +1029,17 @@ int sort_sections(void) {
   i = 0;
   s = g_sec_first;
   while (s != NULL) {
-    sa[i++] = s;
+    sp[i].s = s;
+    sp[i].pos = i;
+    i++;
     s = s->next;
   }
 
-  /* sort the sections by priority first and then by size, biggest first */
-  qsort(sa, sn, sizeof(struct section *), _sections_sort);
+  /* sort the sections by priority first and then by size, biggest first; ties keep their order */
+  qsort(sp, sn, sizeof(struct section_pos), _sections_sort);
+  for (i = 0; i < sn; i++)
+    sa[i] = sp[i].s;
+  free(sp);
 
   /* rebuild the section linked list */
   g_sec_first = sa[0];
